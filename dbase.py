@@ -39,13 +39,6 @@ def not_busy_dev(checkdate):
 	tuple = []
 	i = 0
 	j = 0
-	print('******************************************************************************************')
-	print(row_of_dev)
-	print('******************************************************************************************')
-	print(dev_date)
-	print('******************************************************************************************')
-	print(array_len)
-	print('******************************************************************************************')
 	while i < array_len:
 		#j += i
 		hours = 8
@@ -60,9 +53,6 @@ def not_busy_dev(checkdate):
 		row = []
 		i += 1
 	con.close()
-	print('******************************************************************************************')
-	print(tuple)
-	print('******************************************************************************************')
 	return tuple
 
 
@@ -660,3 +650,26 @@ def have_work(message, flag_role, date):
 	for ids in have_task:
 		row.append(ids[0])
 	return row
+
+
+def update_name_of_pm(id_pm, update_name):
+	print(id_pm, update_name)
+	update_name = "UPDATE pm_table set pm = '{}' WHERE id = {}".format(update_name, id_pm)
+	print(update_name)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(update_name)
+	con.commit()
+	con.close()
+
+
+def delete_pm(id_pm):
+	del_pm = "DELETE from pm_table WHERE id = {}".format(id_pm)
+	del_pm_prj = "DELETE from pm_prj WHERE id = {}".format(id_pm)
+	del_lstusers = "DELETE from lstusers WHERE tgid = {}".format(get_pm_tgid(id_pm))
+	print(del_pm)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(del_pm, del_pm_prj)
+	con.commit()
+	con.close()

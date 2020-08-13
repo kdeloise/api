@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
-from flask import Flask, jsonify, request, Response, json
+from flask import Flask, jsonify, request, Response, json, abort, make_response
 from datetime import datetime
 import json
 import dbase
@@ -38,50 +38,48 @@ def get_list_pms():
     return jsonify(schema_of_pms)
 
 
-@app.route('/api/pms/<int:id>', methods=['GET', 'PUT'])
-def get_pm(id):
-    pm_projects = dbase.get_prjs_for_idpm(id)
-    projects_list = list()
-    for prj in pm_projects:
-        projects_list.append({
-            "id": prj[0],
-            "name": dbase.get_name_project(prj[0])
-        })
-    schema_of_pm = {
-        "error": "string",
-        "timestamp": datetime.timestamp(datetime.now()),
-        "data": {
-            "name": dbase.get_name_pm(id),
-            "telegram": dbase.get_username_of_tg(dbase.get_pm_tgid(id))[0],
+def get_schema_of_pm(id_pm):
+    try:
+        pm_projects = dbase.get_prjs_for_idpm(id_pm)
+        projects_list = list()
+        for prj in pm_projects:
+            projects_list.append({
+                "id": prj[0],
+                "name": dbase.get_name_project(prj[0])
+            })
+        schema_of_pm = {
+            "name": dbase.get_name_pm(id_pm),
+            "telegram": dbase.get_username_of_tg(dbase.get_pm_tgid(id_pm))[0],
             "projects": projects_list
         }
-    }
+    except:
+        return False
+    return schema_of_pm
+
+
+@app.route('/api/pms/<int:id_pm>', methods=['GET', 'PUT'])
+def get_pm(id_pm):
     if request.method == 'GET':
-        print(request.method)
+        if get_schema_of_pm(id_pm):
+            schema_of_pm = get_schema_of_pm(id_pm)
+        else:
+            abort(make_response(jsonify({
+                "error": "invalid_request",
+                "error_description": "Unauthorized"
+            }), 401))
         return Response(json.dumps(schema_of_pm, ensure_ascii=False), mimetype='application/json')
     elif request.method == 'PUT':
         print(request.method)
-        params = request.json
-        print('------>', params, sep='')
+        try:
+            dbase.update_name_of_pm(id_pm, request.json["name"])
+        except:
+            abort(make_response(jsonify({
+                "error": "invalid_request",
+                "error_description": "Unauthorized"
+            }), 401))
+        schema_of_pm = get_schema_of_pm(id_pm)
+        print('------>', request.json["name"], sep='')
         return Response(json.dumps(schema_of_pm, ensure_ascii=False), mimetype='application/json')
-
-
-@app.route('/echo', methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
-def api_echo():
-    if request.method == 'GET':
-        return "ECHO: GET\n"
-
-    elif request.method == 'POST':
-        return "ECHO: POST\n"
-
-    elif request.method == 'PATCH':
-        return "ECHO: PACTH\n"
-
-    elif request.method == 'PUT':
-        return request.json
-
-    elif request.method == 'DELETE':
-        return "ECHO: DELETE"
 
 
 @app.route('/api/pms/<int:id>', methods=['DELETE'])
