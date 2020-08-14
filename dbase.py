@@ -664,12 +664,39 @@ def update_name_of_pm(id_pm, update_name):
 
 
 def delete_pm(id_pm):
-	del_pm = "DELETE from pm_table WHERE id = {}".format(id_pm)
-	del_pm_prj = "DELETE from pm_prj WHERE id = {}".format(id_pm)
+	del_pm_prj = "DELETE from prj_pm WHERE id = {}".format(id_pm)
+	del_pm_table = "DELETE from pm_table WHERE id = {}".format(id_pm)
 	del_lstusers = "DELETE from lstusers WHERE tgid = {}".format(get_pm_tgid(id_pm))
-	print(del_pm)
+	print(del_pm_table)
+	print(del_pm_prj)
+	print(del_lstusers)
 	con = open_base()
 	cur = con.cursor()
-	cur.execute(del_pm, del_pm_prj)
+	if get_prjs_for_idpm(id_pm):
+		cur.execute(del_pm_prj)
+		con.commit()
+		print("delete_prj_pm")
+	cur.execute(del_pm_table)
+	con.commit()
+	cur.execute(del_lstusers)
+	con.commit()
+	con.close()
+
+
+def add_pm(pm_name, tg_username):
+	add_lstusers = "INSERT into lstusers (usname, username, tgid) VALUES ('{}', '{}', {}) RETURNING id".format(pm_name, tg_username, 0)
+	set_unique_tg_id_lst = "UPDATE lstusers set tgid=id where tgid = {}".format(0)
+	add_pm_table = "INSERT into pm_table (pm, tg_id) VALUES ('{}', '{}')".format(pm_name, 0)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(add_lstusers)
+	last_id = cur.fetchone()[0]
+	con.commit()
+	cur.fetchall()
+	cur.execute(set_unique_tg_id_lst)
+	con.commit()
+	cur.execute(add_pm_table)
+	con.commit()
+	cur.execute("UPDATE pm_table set tg_id={} where tg_id = {}".format(last_id, 0))
 	con.commit()
 	con.close()
