@@ -47,7 +47,7 @@ def get_list_pms():
 			"projects": projects_list
 		}
 		schema_of_pms["data"].append(dict_for_pm)
-	return jsonify(schema_of_pms)
+	return Response(json.dumps(schema_of_pms, ensure_ascii=False), mimetype='application/json')
 
 
 def get_schema_of_pm(id_pm):
@@ -88,7 +88,6 @@ def get_pm(id_pm):
 		return Response(json.dumps(schema_of_pm, ensure_ascii=False), mimetype='application/json')
 
 	elif request.method == 'PUT':
-		print(request.method)
 		try:
 			dbase.update_name_of_pm(id_pm, request.json["name"])
 		except:
@@ -141,7 +140,7 @@ def add_pm():
 
 
 @app.route('/api/prj_pm/<id_pm>', methods=['GET', 'PUT', 'DELETE'])
-def get_prj_pm():
+def get_prj_pm(id_pm):
 	if request.method == 'GET':
 		pass
 	elif request.method == 'PUT':
@@ -158,29 +157,124 @@ def add_prj_for_pm():
 # -------------------------------------------------------------
 #                           DEVS BLOCK
 # -------------------------------------------------------------
-@app.route('/api/dev/list', methods=['GET'])
+def get_schema_of_dev(id_dev):
+	try:
+		schema_of_dev = {
+			"error": "success",
+			"timestamp": datetime.timestamp(datetime.now()),
+			"data": dict()
+		}
+		dev_projects = dbase.get_prjs_for_dev(id_dev)
+		projects_list = list()
+		for prj in dev_projects:
+			projects_list.append({
+				"id": prj[0],
+				"name": dbase.get_name_project(prj[0])
+			})
+		data = {
+			"name": dbase.get_name_resource(id_dev),
+			"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(id_dev))[0],
+			"projects": projects_list
+		}
+		schema_of_dev["data"] = data
+	except:
+		return False
+	return schema_of_dev
+
+
+@app.route('/api/devs/list', methods=['GET'])
 def get_list_devs():
-	pass
+	schema_of_devs = {
+		"error": "success",
+		"timestamp": datetime.timestamp(datetime.now()),
+		"total": 0,
+		"offset": 0,
+		"perPage": 0,
+		"data": list()
+	}
+	list_of_id_devs = dbase.get_list_of_id_devs()
+	for id_dev in list_of_id_devs:
+		dev_projects = dbase.get_prjs_for_dev(id_dev)
+		projects_list = list()
+		for prj in dev_projects:
+			projects_list.append({
+				"id": prj[0],
+				"name": dbase.get_name_project(prj[0])
+			})
+		dict_for_dev = {
+			"name": dbase.get_name_resource(id_dev),
+			"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(id_dev))[0],
+			"projects": projects_list
+		}
+		schema_of_devs["data"].append(dict_for_dev)
+	return Response(json.dumps(schema_of_devs, ensure_ascii=False), mimetype='application/json')
 
 
-@app.route('/api/dev/<id_dev>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/api/devs/<id_dev>', methods=['GET', 'PUT', 'DELETE'])
 def get_dev(id_dev):
 	if request.method == 'GET':
-		pass
+		if get_schema_of_dev(id_dev):
+			schema_of_dev = get_schema_of_dev(id_dev)
+		else:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+		return Response(json.dumps(schema_of_dev, ensure_ascii=False), mimetype='application/json')
 
 	elif request.method == 'PUT':
-		pass
+		try:
+			dbase.update_name_of_dev(id_dev, request.json["name"])
+		except:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+		schema_of_dev = get_schema_of_dev(id_dev)
+		print('------>', request.json["name"], sep='')
+		return Response(json.dumps(schema_of_dev, ensure_ascii=False), mimetype='application/json')
 
 	elif request.method == 'DELETE':
-		pass
+		try:
+			dbase.delete_dev(id_dev)
+			response_json = {
+				"error": "success",
+				"timestamp": datetime.timestamp(datetime.now()),
+				"data": {
+					"message": "ok"
+				}
+			}
+			return Response(json.dumps(response_json, ensure_ascii=False), mimetype='application/json')
+		except:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 400))
 
 
-@app.route('/api/dev/add', methods=['POST'])
+@app.route('/api/devs/add', methods=['POST'])
 def add_dev():
-	pass
+	try:
+		if request.method == 'POST':
+			dev_name = request.json["name"]
+			tg_username = request.json["telegram"]
+			dbase.add_dev(dev_name, tg_username)
+			response_json = {
+				"error": "success",
+				"timestamp": datetime.timestamp(datetime.now()),
+				"data": {
+					"message": "ok"
+				}
+			}
+			return Response(json.dumps(response_json, ensure_ascii=False), mimetype='application/json')
+	except:
+		abort(make_response(jsonify({
+			"error": "invalid_request",
+			"error_description": "Unauthorized"
+		}), 400))
 
 
-@app.route('/api/prj_dev/<id_dev>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/api/prj_devs/<id_dev>', methods=['GET', 'PUT', 'DELETE'])
 def get_prj_dev(id_dev):
 	if request.method == 'GET':
 		pass
@@ -200,8 +294,30 @@ def add_prj_for_dev():
 # -------------------------------------------------------------
 @app.route('/api/prj/list', methods=['GET'])
 def get_list_prjs():
-	pass
-
+	schema_of_prjs = {
+		"error": "success",
+		"timestamp": datetime.timestamp(datetime.now()),
+		"total": 0,
+		"offset": 0,
+		"perPage": 0,
+		"data": list()
+	}
+	list_of_id_prjs = dbase.get_list_of_id_prjs()
+	for id_prj in list_of_id_prjs:
+		projects_pms = dbase.get_prjs_for_(id_prj)
+		projects_list = list()
+		for prj in projects_pms:
+			projects_list.append({
+				"id": prj[0],
+				"name": dbase.get_name_project(prj[0])
+			})
+		dict_for_dev = {
+			"name": dbase.get_name_resource(id_prj),
+			"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(id_prj))[0],
+			"projects": projects_list
+		}
+		schema_of_prjs["data"].append(dict_for_dev)
+	return Response(json.dumps(schema_of_prjs, ensure_ascii=False), mimetype='application/json')
 
 @app.route('/api/prj/<id_prj>', methods=['GET', 'PUT', 'DELETE'])
 def get_prj(id_prj):
@@ -216,7 +332,7 @@ def get_prj(id_prj):
 
 
 @app.route('/api/prj/add', methods=['POST'])
-def add_dev():
+def add_prj():
 	pass
 
 

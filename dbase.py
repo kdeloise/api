@@ -4,7 +4,7 @@ import psycopg2
 import config
 
 
-#ПОДКЛЮЧАЕМСЯ К БАЗЕ ДАННЫХ
+# ПОДКЛЮЧАЕМСЯ К БАЗЕ ДАННЫХ
 def open_base():
 	con = psycopg2.connect(
 		database=config.DATABASE["database"],
@@ -28,7 +28,7 @@ def get_username_of_tg(tg_id):
 
 
 def not_busy_dev(checkdate):
-	row_of_dev = list_id_of_dev()
+	row_of_dev = get_list_of_id_devs()
 	array_len = len(row_of_dev)
 	command = "SELECT id_dev, hours from schedule where lstdate = '{}'".format(checkdate)
 	con = open_base()
@@ -40,7 +40,7 @@ def not_busy_dev(checkdate):
 	i = 0
 	j = 0
 	while i < array_len:
-		#j += i
+		# j += i
 		hours = 8
 		while j < len(dev_date):
 			if row_of_dev[i] == dev_date[j][0]:
@@ -56,7 +56,7 @@ def not_busy_dev(checkdate):
 	return tuple
 
 
-def list_id_of_dev():
+def get_list_of_id_devs():
 	command = "SELECT id from dev_table"
 	con = open_base()
 	cur = con.cursor()
@@ -69,7 +69,7 @@ def list_id_of_dev():
 	return row
 
 
-def get_list_of_id_prj():
+def get_list_of_id_prjs():
 	command = "SELECT id from prj_table"
 	con = open_base()
 	cur = con.cursor()
@@ -93,6 +93,7 @@ def get_list_of_id_pms():
 		row.append(id_pm[0])
 	con.close()
 	return row
+
 
 # def get_pm_sqlid_by_user_id(user_id):
 # 	command = "SELECT id from pm_table where tg_id = '{}'".format(user_id)
@@ -279,7 +280,8 @@ def reg_user(user_id, name, tg):
 	tgusername = '@' + str(tg)
 	con = open_base()
 	cur = con.cursor()
-	command = '''INSERT INTO lstusers (usname, username, tgid) VALUES ('{}','{}',{})'''.format(name, tgusername, user_id)
+	command = '''INSERT INTO lstusers (usname, username, tgid) VALUES ('{}','{}',{})'''.format(name, tgusername,
+	                                                                                           user_id)
 	cur.execute(command)
 	con.commit()
 	con.close()
@@ -304,13 +306,14 @@ def check_rsr(user_id, soldate, id_prj):
 	con = open_base()
 	cur = con.cursor()
 	row = []
-	cur.execute("SELECT id_dev from schedule where id_prj = {} and lstdate = '{}' and id_pm = {}".format(id_prj, soldate, pmid))
+	cur.execute(
+		"SELECT id_dev from schedule where id_prj = {} and lstdate = '{}' and id_pm = {}".format(id_prj, soldate, pmid))
 	rsr = cur.fetchall()
 	for r in rsr:
 		row.append(r[0])
 	print('Это ресурсы')
 	print(row)
-	return(set(row))
+	return (set(row))
 
 
 def check_user_exist_pir(user_id):
@@ -368,11 +371,11 @@ def check_user_devtable(user_id):
 def amount_of_resource(message, resource, lstdate):
 	con = open_base()
 	cur = con.cursor()
-	print('====='+str(get_pm_sqlid(message.chat.id)))
+	print('=====' + str(get_pm_sqlid(message.chat.id)))
 	print('=====id_dev' + str(resource))
 	print('=====date' + lstdate)
 	command = "SELECT hours from schedule where (id_pm = {} " \
-			  "and id_dev = {} and lstdate = '{}')".format(get_pm_sqlid(message.chat.id), resource, lstdate)
+	          "and id_dev = {} and lstdate = '{}')".format(get_pm_sqlid(message.chat.id), resource, lstdate)
 	cur.execute(command)
 	aors = cur.fetchall()
 	print(aors)
@@ -409,7 +412,8 @@ def check_pms(user_id):
 
 
 def checkdate(message, check):
-	chkdate_comand = "SELECT id_pm from schedule where (id_pm = {} and lstdate = '{}')".format(get_pm_sqlid(message.chat.id), check)
+	chkdate_comand = "SELECT id_pm from schedule where (id_pm = {} and lstdate = '{}')".format(
+		get_pm_sqlid(message.chat.id), check)
 	con = open_base()
 	cur = con.cursor()
 	cur.execute(chkdate_comand)
@@ -421,6 +425,7 @@ def checkdate(message, check):
 		print(True)
 		return True
 
+
 def pm_prj_for_dist(tg_id_pm):
 	pmid = get_pm_sqlid(tg_id_pm)
 	get_project_command = "SELECT id_prj from prj_pm where id_pm = {}".format(pmid)
@@ -430,6 +435,7 @@ def pm_prj_for_dist(tg_id_pm):
 	prjs = cur.fetchall()
 	print(prjs)
 	return (prjs)
+
 
 def pm_prj(pm_name):
 	print('------>' + pm_name)
@@ -456,6 +462,17 @@ def get_prjs_for_idpm(pmid):
 	return prjs
 
 
+def get_prjs_for_dev(devid):
+	print(devid)
+	get_project_command = "SELECT id_prj from prj_dev where id_dev = {}".format(devid)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(get_project_command)
+	prjs = cur.fetchall()
+	print(prjs)
+	return prjs
+
+
 def get_prj_id(prj_name):
 	print("FAQ________")
 	print(prj_name)
@@ -471,7 +488,7 @@ def get_prj_id(prj_name):
 	return prj_id
 
 
-#get list of devs by the prj_name
+# get list of devs by the prj_name
 def prj_devs(prj_name):
 	print('А что тут у нас?______________________________________')
 	print(prj_name)
@@ -492,7 +509,7 @@ def prj_devs(prj_name):
 
 def already_exist(mydate, id_prj, id_dev, id_to_pm):
 	command = "SELECT id from schedule where lstdate = '{}'" \
-			  "and id_prj = {} and id_dev = {} and id_pm  = {}".format(mydate, id_prj, id_dev, id_to_pm)
+	          "and id_prj = {} and id_dev = {} and id_pm  = {}".format(mydate, id_prj, id_dev, id_to_pm)
 	con = open_base()
 	cur = con.cursor()
 	cur.execute(command)
@@ -517,19 +534,20 @@ def del_unuse_rows():
 def update_base(message, mydate, id_prj, id_dev, id_prj_from, sendhours, id_to_pm):
 	id_from_pm = get_pm_sqlid(message.chat.id)
 	update_command_from = "UPDATE schedule SET hours = hours - {} where lstdate = '{}'" \
-						  "and id_pm = {} and id_prj = {} and id_dev = {}".format(sendhours,
-																				  mydate, id_from_pm, id_prj_from, id_dev)
+	                      "and id_pm = {} and id_prj = {} and id_dev = {}".format(sendhours,
+	                                                                              mydate, id_from_pm, id_prj_from,
+	                                                                              id_dev)
 	con = open_base()
 	cur = con.cursor()
 	cur.execute(update_command_from)
 	con.commit()
 	if not already_exist(mydate, id_prj, id_dev, id_to_pm):
 		update_command_to = "INSERT into schedule (lstdate, id_prj, id_dev, hours, id_pm)" \
-							"values ('{}', {}, {}, {}, {})".format(mydate, id_prj, id_dev, sendhours, id_to_pm)
+		                    "values ('{}', {}, {}, {}, {})".format(mydate, id_prj, id_dev, sendhours, id_to_pm)
 	else:
 		update_command_to = "UPDATE schedule SET hours = hours + {} where lstdate = '{}'" \
-							"and id_pm = {} and id_prj = {} and id_dev = {}".format(sendhours,
-																					mydate, id_to_pm, id_prj, id_dev)
+		                    "and id_pm = {} and id_prj = {} and id_dev = {}".format(sendhours,
+		                                                                            mydate, id_to_pm, id_prj, id_dev)
 	cur.execute(update_command_to)
 	con.commit()
 	con.close()
@@ -624,11 +642,11 @@ def update_base_distribute(message, usedate, id_prj, id_dev, hours):
 	cur = con.cursor()
 	if not already_exist(usedate, id_prj, id_dev, id_pm):
 		update_command_to = "INSERT into schedule (lstdate , id_prj, id_dev, hours, id_pm)" \
-							"values ('{}', {}, {}, {}, {})".format(usedate, id_prj, id_dev, hours, id_pm)
+		                    "values ('{}', {}, {}, {}, {})".format(usedate, id_prj, id_dev, hours, id_pm)
 	else:
 		update_command_to = "UPDATE schedule SET hours = hours + {} where lstdate = '{}'" \
-							"and id_pm = {} and id_prj = {} and id_dev = {}".format(hours,
-																					usedate, id_pm, id_prj, id_dev)
+		                    "and id_pm = {} and id_prj = {} and id_dev = {}".format(hours,
+		                                                                            usedate, id_pm, id_prj, id_dev)
 	cur.execute(update_command_to)
 	con.commit()
 	print('Задача поставлена!!!')
@@ -684,7 +702,8 @@ def delete_pm(id_pm):
 
 
 def add_pm(pm_name, tg_username):
-	add_lstusers = "INSERT into lstusers (usname, username, tgid) VALUES ('{}', '{}', {}) RETURNING id".format(pm_name, tg_username, 0)
+	add_lstusers = "INSERT into lstusers (usname, username, tgid) VALUES ('{}', '{}', {})" \
+											" RETURNING id".format(pm_name, tg_username, 0)
 	set_unique_tg_id_lst = "UPDATE lstusers set tgid=id where tgid = {}".format(0)
 	add_pm_table = "INSERT into pm_table (pm, tg_id) VALUES ('{}', '{}')".format(pm_name, 0)
 	con = open_base()
@@ -698,5 +717,56 @@ def add_pm(pm_name, tg_username):
 	cur.execute(add_pm_table)
 	con.commit()
 	cur.execute("UPDATE pm_table set tg_id={} where tg_id = {}".format(last_id, 0))
+	con.commit()
+	con.close()
+
+
+def update_name_of_dev(id_dev, update_name):
+	print(id_dev, update_name)
+	update_name = "UPDATE dev_table set dev = '{}' WHERE id = {}".format(update_name, id_dev)
+	print(update_name)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(update_name)
+	con.commit()
+	con.close()
+
+
+def delete_dev(id_dev):
+	del_dev_prj = "DELETE from prj_dev WHERE id = {}".format(id_dev)
+	del_dev_table = "DELETE from dev_table WHERE id = {}".format(id_dev)
+	del_lstusers = "DELETE from lstusers WHERE tgid = {}".format(get_dev_tgid(id_dev))
+	print(del_dev_table)
+	print(del_dev_prj)
+	print(del_lstusers)
+	con = open_base()
+	cur = con.cursor()
+	if get_prjs_for_idpm(id_dev):
+		cur.execute(del_dev_prj)
+		con.commit()
+		print("delete_prj_dev")
+	cur.execute(del_dev_table)
+	con.commit()
+	cur.execute(del_lstusers)
+	con.commit()
+	con.close()
+
+
+def add_dev(dev_name, tg_username):
+	add_lstusers = "INSERT into lstusers (usname, username, tgid) VALUES ('{}', '{}', {})" \
+											" RETURNING id".format(dev_name, tg_username, 0)
+	set_unique_tg_id_lst = "UPDATE lstusers set tgid=id where tgid = {}".format(0)
+	add_dev_table = "INSERT into dev_table (dev, tg_id) VALUES ('{}', '{}')".format(dev_name, 0)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(add_lstusers)
+	last_id = cur.fetchone()[0]
+	con.commit()
+	cur.fetchall()
+	cur.execute(set_unique_tg_id_lst)
+	con.commit()
+	cur.execute(add_dev_table)
+	con.commit()
+	cur.execute("UPDATE dev_table set tg_id={} where tg_id = {}".format(last_id, 0))
 	con.commit()
 	con.close()
