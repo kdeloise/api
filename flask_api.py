@@ -292,7 +292,7 @@ def add_prj_for_dev():
 # -------------------------------------------------------------
 #                           PRJS BLOCK
 # -------------------------------------------------------------
-@app.route('/api/prj/list', methods=['GET'])
+@app.route('/api/prjs/list', methods=['GET'])
 def get_list_prjs():
 	schema_of_prjs = {
 		"error": "success",
@@ -304,36 +304,125 @@ def get_list_prjs():
 	}
 	list_of_id_prjs = dbase.get_list_of_id_prjs()
 	for id_prj in list_of_id_prjs:
-		projects_pms = dbase.get_prjs_for_(id_prj)
-		projects_list = list()
-		for prj in projects_pms:
-			projects_list.append({
-				"id": prj[0],
-				"name": dbase.get_name_project(prj[0])
-			})
-		dict_for_dev = {
-			"name": dbase.get_name_resource(id_prj),
-			"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(id_prj))[0],
-			"projects": projects_list
+		project_pms = dbase.get_pms_for_prj(id_prj)
+		project_devs = dbase.get_devs_for_prj(id_prj)
+		projects_dict = {
+			"id": id_prj,
+			"name": dbase.get_name_project(id_prj),
+			"pms": list(),
+			"developers": list()
 		}
-		schema_of_prjs["data"].append(dict_for_dev)
+		for pm in project_pms:
+			projects_dict["pms"].append({
+				"id": pm[0],
+				"name": dbase.get_name_pm(pm[0]),
+				"telegram": dbase.get_username_of_tg(dbase.get_pm_tgid(pm[0]))[0],
+			})
+		for dev in project_devs:
+			projects_dict["developers"].append({
+				"id": dev[0],
+				"name": dbase.get_name_resource(dev[0]),
+				"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(dev[0]))[0]
+			})
+		schema_of_prjs["data"].append(projects_dict)
 	return Response(json.dumps(schema_of_prjs, ensure_ascii=False), mimetype='application/json')
 
-@app.route('/api/prj/<id_prj>', methods=['GET', 'PUT', 'DELETE'])
+
+def get_schema_of_prj(id_prj):
+	try:
+		schema_of_prj = {
+			"error": "success",
+			"timestamp": datetime.timestamp(datetime.now()),
+			"data": dict()
+		}
+		project_pms = dbase.get_pms_for_prj(id_prj)
+		project_devs = dbase.get_devs_for_prj(id_prj)
+		projects_dict = {
+			"id": id_prj,
+			"name": dbase.get_name_project(id_prj),
+			"pms": list(),
+			"developers": list()
+		}
+		for pm in project_pms:
+			projects_dict["pms"].append({
+				"id": pm[0],
+				"name": dbase.get_name_pm(pm[0]),
+				"telegram": dbase.get_username_of_tg(dbase.get_pm_tgid(pm[0]))[0],
+			})
+		for dev in project_devs:
+			projects_dict["developers"].append({
+				"id": dev[0],
+				"name": dbase.get_name_resource(dev[0]),
+				"telegram": dbase.get_username_of_tg(dbase.get_dev_tgid(dev[0]))[0]
+			})
+		schema_of_prj["data"] = projects_dict
+		return schema_of_prj
+	except:
+		return False
+
+
+@app.route('/api/prjs/<id_prj>', methods=['GET', 'PUT', 'DELETE'])
 def get_prj(id_prj):
 	if request.method == 'GET':
-		pass
+		if get_schema_of_prj(id_prj):
+			schema_of_prj = get_schema_of_prj(id_prj)
+		else:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+		return Response(json.dumps(schema_of_prj, ensure_ascii=False), mimetype='application/json')
 
 	elif request.method == 'PUT':
-		pass
+		try:
+			dbase.update_name_of_prj(id_prj, request.json["name"])
+		except:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+		schema_of_prj = get_schema_of_prj(id_prj)
+		print('------>', request.json["name"], sep='')
+		return Response(json.dumps(schema_of_prj, ensure_ascii=False), mimetype='application/json')
 
 	elif request.method == 'DELETE':
-		pass
+		try:
+			dbase.delete_prj(id_prj)
+			response_json = {
+				"error": "success",
+				"timestamp": datetime.timestamp(datetime.now()),
+				"data": {
+					"message": "ok"
+				}
+			}
+			return Response(json.dumps(response_json, ensure_ascii=False), mimetype='application/json')
+		except:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 400))
 
 
-@app.route('/api/prj/add', methods=['POST'])
+@app.route('/api/prjs/add', methods=['POST'])
 def add_prj():
-	pass
+	try:
+		if request.method == 'POST':
+			prj_name = request.json["name"]
+			print("prj_name------>", prj_name)
+			dbase.add_prj(prj_name)
+			response_json = {
+				"error": "success",
+				"timestamp": datetime.timestamp(datetime.now()),
+				"data": {
+					"message": "ok"
+				}
+			}
+			return Response(json.dumps(response_json, ensure_ascii=False), mimetype='application/json')
+	except:
+		abort(make_response(jsonify({
+			"error": "invalid_request",
+			"error_description": "Unauthorized"
+		}), 400))
 
 
 if __name__ == '__main__':

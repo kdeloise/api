@@ -473,6 +473,28 @@ def get_prjs_for_dev(devid):
 	return prjs
 
 
+def get_pms_for_prj(id_prj):
+	print(id_prj)
+	get_pm_command = "SELECT id_pm from prj_pm where id_prj = {}".format(id_prj)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(get_pm_command)
+	pms = cur.fetchall()
+	print(pms)
+	return pms
+
+
+def get_devs_for_prj(id_prj):
+	print(id_prj)
+	get_dev_command = "SELECT id_dev from prj_dev where id_prj = {}".format(id_prj)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(get_dev_command)
+	devs = cur.fetchall()
+	print("prj_devs-------->", devs, sep="")
+	return devs
+
+
 def get_prj_id(prj_name):
 	print("FAQ________")
 	print(prj_name)
@@ -682,7 +704,7 @@ def update_name_of_pm(id_pm, update_name):
 
 
 def delete_pm(id_pm):
-	del_pm_prj = "DELETE from prj_pm WHERE id = {}".format(id_pm)
+	del_pm_prj = "DELETE from prj_pm WHERE id_pm = {}".format(id_pm)
 	del_pm_table = "DELETE from pm_table WHERE id = {}".format(id_pm)
 	del_lstusers = "DELETE from lstusers WHERE tgid = {}".format(get_pm_tgid(id_pm))
 	print(del_pm_table)
@@ -733,7 +755,7 @@ def update_name_of_dev(id_dev, update_name):
 
 
 def delete_dev(id_dev):
-	del_dev_prj = "DELETE from prj_dev WHERE id = {}".format(id_dev)
+	del_dev_prj = "DELETE from prj_dev WHERE id_dev = {}".format(id_dev)
 	del_dev_table = "DELETE from dev_table WHERE id = {}".format(id_dev)
 	del_lstusers = "DELETE from lstusers WHERE tgid = {}".format(get_dev_tgid(id_dev))
 	print(del_dev_table)
@@ -741,7 +763,7 @@ def delete_dev(id_dev):
 	print(del_lstusers)
 	con = open_base()
 	cur = con.cursor()
-	if get_prjs_for_idpm(id_dev):
+	if get_prjs_for_dev(id_dev):
 		cur.execute(del_dev_prj)
 		con.commit()
 		print("delete_prj_dev")
@@ -768,5 +790,47 @@ def add_dev(dev_name, tg_username):
 	cur.execute(add_dev_table)
 	con.commit()
 	cur.execute("UPDATE dev_table set tg_id={} where tg_id = {}".format(last_id, 0))
+	con.commit()
+	con.close()
+
+
+def update_name_of_prj(id_prj, update_name):
+	print(id_prj, update_name)
+	update_name = "UPDATE prj_table set prj = '{}' WHERE id = {}".format(update_name, id_prj)
+	print(update_name)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(update_name)
+	con.commit()
+	con.close()
+
+
+def delete_prj(id_prj):
+	del_dev_prj = "DELETE from prj_dev WHERE id_prj = {}".format(id_prj)
+	del_pm_prj = "DELETE from prj_pm WHERE id_prj = {}".format(id_prj)
+	del_prj_table = "DELETE from prj_table WHERE id = {}".format(id_prj)
+	print(del_dev_prj)
+	print(del_pm_prj)
+	print(del_prj_table)
+	con = open_base()
+	cur = con.cursor()
+	if get_devs_for_prj(id_prj):
+		cur.execute(del_dev_prj)
+		con.commit()
+		print("delete_prj_from_devs")
+	if get_pms_for_prj(id_prj):
+		cur.execute(del_pm_prj)
+		con.commit()
+		print("delete_prj_from_pms")
+	cur.execute(del_prj_table)
+	con.commit()
+	con.close()
+
+
+def add_prj(prj_name):
+	add_prj_table = "INSERT into prj_table (prj) VALUES ('{}')".format(prj_name)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(add_prj_table)
 	con.commit()
 	con.close()
