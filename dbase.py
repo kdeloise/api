@@ -834,3 +834,24 @@ def add_prj(prj_name):
 	cur.execute(add_prj_table)
 	con.commit()
 	con.close()
+
+
+def get_schedule_dev(id_dev):
+	get_schedule_command = "SELECT lstdate, id_prj, hours from schedule where id_dev = {}".format(id_dev)
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(get_schedule_command)
+	# (str: lstdate, int: id_prj, int: hours)
+	list_of_tupple_schedule = cur.fetchall()
+	con.close()
+	return list_of_tupple_schedule
+
+
+def update_schedule_for_dev(id_dev, date_, name_prj, update_hours):
+	update_cmd = "UPDATE schedule set hours = {} where id_dev = {} and lstdate = '{}' and id_prj = {}".\
+		format(update_hours, id_dev, date_, get_prj_id(name_prj))
+	con = open_base()
+	cur = con.cursor()
+	cur.execute(update_cmd)
+	con.commit()
+	con.close()

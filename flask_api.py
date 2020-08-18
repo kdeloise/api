@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding=utf-8
 from flask import Flask, jsonify, request, Response, json, abort, make_response
-from datetime import datetime
+from datetime import datetime, date
 import json
 import dbase
 
@@ -9,6 +9,9 @@ app = Flask(__name__)
 client = app.test_client()
 
 
+# -------------------------------------------------------------
+#                           AUTH BLOCK
+# -------------------------------------------------------------
 # @app.route('/login', methods='POST')
 # def login():
 # 	pass
@@ -272,6 +275,57 @@ def add_dev():
 			"error": "invalid_request",
 			"error_description": "Unauthorized"
 		}), 400))
+
+
+@app.route('/api/devs/<id_dev>/timelog', methods=['GET', 'PUT'])
+def get_timelog_dev(id_dev):
+	if request.method == 'GET':
+		if dbase.get_schedule_dev(id_dev):
+			schema_of_timelog_dev = {
+				"error": "string",
+				"timestamp": 1559751301818,
+				"total": 0,
+				"offset": 0,
+				"perPage": 0,
+				"data": list()
+			}
+			list_of_schedule = dbase.get_schedule_dev(id_dev)
+			for schedule in list_of_schedule:
+				split_schedule = schedule[0].split('/')
+				date_ts = datetime(int(split_schedule[2]), int(split_schedule[1]), int(split_schedule[0]))
+				dict_of_schedule = {
+					"date": int(datetime.timestamp(date_ts)),
+					"project": dbase.get_name_project(schedule[1]),
+					"hours": schedule[2]
+				}
+				schema_of_timelog_dev["data"].append(dict_of_schedule)
+		else:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+		return Response(json.dumps(schema_of_timelog_dev, ensure_ascii=False), mimetype='application/json')
+
+	elif request.method == 'PUT':
+		try:
+			date_ts = datetime.fromtimestamp(request.json["date"])
+			date_str = f'{int(date_ts.day)}/{int(date_ts.month)}/{int(date_ts.year)}'
+			print(request.json["date"], date_str, request.json["project"], request.json["hours"])
+			dbase.update_schedule_for_dev(id_dev, date_str, request.json["project"], request.json["hours"])
+			response_json = {
+				"error": "success",
+				"timestamp": datetime.timestamp(datetime.now()),
+				"data": {
+					"message": "ok"
+				}
+			}
+		except:
+			abort(make_response(jsonify({
+				"error": "invalid_request",
+				"error_description": "Unauthorized"
+			}), 401))
+
+		return Response(json.dumps(response_json, ensure_ascii=False), mimetype='application/json')
 
 
 @app.route('/api/prj_devs/<id_dev>', methods=['GET', 'PUT', 'DELETE'])
